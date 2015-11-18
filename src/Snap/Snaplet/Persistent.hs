@@ -13,6 +13,18 @@ module Snap.Snaplet.Persistent
   , mkSnapletPgPool
   , runPersist
   , runPersist'
+  , withPool
+
+  -- * Utility Functions
+  , mkKey
+  , mkKeyBS
+  , mkKeyT
+  , showKey
+  , showKeyBS
+  , mkInt
+  , mkWord64
+  , followForeignKey
+  , fromPersistValue'
   ) where
 
 -------------------------------------------------------------------------------
@@ -22,9 +34,20 @@ import           Control.Monad.State
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Resource
 import           Control.Retry
+import           Data.ByteString              (ByteString)
 import           Data.Configurator
 import           Data.Configurator.Types
+import           Data.Maybe
+import           Data.Readable
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T
+import qualified Data.Text.Encoding           as T
+import           Data.Word
+import           Database.Persist
+import           Database.Persist.Class
 import           Database.Persist.Postgresql  hiding (get)
+import qualified Database.Persist.Postgresql  as DB
+import           Database.Persist.Types
 import           Paths_snaplet_persistent
 import           Snap.Core
 import           Snap.Snaplet                 as S
@@ -125,3 +148,64 @@ withPool cp f = liftIO $ recoverAll retryPolicy $ runF f cp
   where
     retryPolicy = constantDelay 50000 <> limitRetries 5
     runF f' cp' = liftIO . runNoLoggingT . runResourceT $ runSqlPool f' cp'
+
+-------------------------------------------------------------------------------
+-- | Make a Key from an Int.
+mkKey :: ToBackendKey SqlBackend entity => Int -> Key entity
+mkKey = fromBackendKey . SqlBackendKey . fromIntegral
+
+
+-------------------------------------------------------------------------------
+-- | Makes a Key from a ByteString.  Calls error on failure.
+mkKeyBS :: ToBackendKey SqlBackend entity => ByteString -> Key entity
+mkKeyBS = mkKey . fromMaybe (error "Can't ByteString value") . fromBS
+
+
+-------------------------------------------------------------------------------
+-- | Makes a Key from Text.  Calls error on failure.
+mkKeyT :: ToBackendKey SqlBackend entity => Text -> Key entity
+mkKeyT = mkKey . fromMaybe (error "Can't Text value") . fromText
+
+
+-------------------------------------------------------------------------------
+-- | Makes a Text representation of a Key.
+showKey :: ToBackendKey SqlBackend e => Key e -> Text
+showKey = T.pack . show . mkInt
+
+
+-------------------------------------------------------------------------------
+-- | Makes a ByteString representation of a Key.
+showKeyBS :: ToBackendKey SqlBackend e => Key e -> ByteString
+showKeyBS = T.encodeUtf8 . showKey
+
+
+-------------------------------------------------------------------------------
+-- | Converts a Key to Int.  Fails with error if the conversion fails.
+mkInt :: ToBackendKey SqlBackend a => Key a -> Int
+mkInt = fromIntegral . unSqlBackendKey . toBackendKey
+
+
+-------------------------------------------------------------------------------
+-- | Converts a Key to Word64.  Fails with error if the conversion fails.
+mkWord64 :: ToBackendKey SqlBackend a => Key a -> Word64
+mkWord64 = fromIntegral . unSqlBackendKey . toBackendKey
+
+
+-------------------------------------------------------------------------------
+-- Converts a PersistValue to a more concrete type.  Calls error if the
+-- conversion fails.
+fromPersistValue' :: PersistField c => PersistValue -> c
+fromPersistValue' = either (const $ error "Persist conversion failed") id
+                    . fromPersistValue
+
+
+------------------------------------------------------------------------------
+-- | Follows a foreign key field in one entity and retrieves the corresponding
+-- entity from the database.
+followForeignKey :: (PersistEntity a, HasPersistPool m,
+                     PersistEntityBackend a ~ SqlBackend)
+                 => (t -> Key a) -> Entity t -> m (Maybe (Entity a))
+followForeignKey toKey (Entity _ val) = do
+    let key' = toKey val
+    mval <- runPersist' $ DB.get key'
+    return $ fmap (Entity key') mval
