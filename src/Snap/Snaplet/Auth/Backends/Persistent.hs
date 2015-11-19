@@ -234,7 +234,6 @@ instance IAuthBackend PersistAuthManager where
             , Just $ SnapAuthUserUpdatedAt =. now
             , Just $ SnapAuthUserResetToken =. userResetToken
             , Just $ SnapAuthUserResetRequestedAt =. userResetRequestedAt
-            , Just $ SnapAuthUserRoles =. show userRoles
             ]
           return $ Right $ au {userUpdatedAt = Just now}
 
