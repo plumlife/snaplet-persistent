@@ -1,5 +1,5 @@
 name:           snaplet-persistent
-version:        0.3.99
+version:        0.3.100
 synopsis:       persistent snaplet for the Snap Framework
 description:    Snaplet support for using the Postgresql database
                 with a Snap Framework application via the persistent
@@ -33,6 +33,7 @@ Library
     
   other-modules:
     Paths_snaplet_persistent
+    Snap.Snaplet.Auth.Backends.Persistent.Types
 
   build-depends:
     base                       >= 4       && < 5,
