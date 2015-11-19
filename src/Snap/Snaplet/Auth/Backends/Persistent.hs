@@ -29,7 +29,9 @@ module Snap.Snaplet.Auth.Backends.Persistent
 ------------------------------------------------------------------------------
 import           Control.Monad
 import           Control.Monad.Trans
+import qualified Data.ByteString.Char8                       as C8
 import qualified Data.HashMap.Strict                         as HM
+import           Data.List.Split                             (splitOn)
 import           Data.Maybe
 import           Data.Text                                   (Text)
 import qualified Data.Text                                   as T
@@ -97,7 +99,7 @@ db2au (Entity k SnapAuthUser{..}) = AuthUser
   , userUpdatedAt        = Just snapAuthUserUpdatedAt
   , userResetToken       = snapAuthUserResetToken
   , userResetRequestedAt = snapAuthUserResetRequestedAt
-  , userRoles            = []
+  , userRoles            = map (Role . C8.pack) $ splitOn "," snapAuthUserRoles
   , userMeta             = HM.empty
   }
 
