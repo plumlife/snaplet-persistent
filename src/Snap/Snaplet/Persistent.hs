@@ -38,6 +38,7 @@ import           Data.ByteString              (ByteString)
 import           Data.Configurator
 import           Data.Configurator.Types
 import           Data.Maybe
+import           Data.Monoid
 import           Data.Readable
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
@@ -144,9 +145,9 @@ withPool :: MonadIO m
          => ConnectionPool
          -> SqlPersistT (ResourceT (NoLoggingT IO)) a
          -> m a
-withPool cp f = liftIO $ recoverAll retryPolicy $ runF f cp
+withPool cp f = liftIO $ recoverAll retryPolicy' $ \_ -> runF f cp
   where
-    retryPolicy = constantDelay 50000 <> limitRetries 5
+    retryPolicy' = constantDelay 50000 <> limitRetries 5
     runF f' cp' = liftIO . runNoLoggingT . runResourceT $ runSqlPool f' cp'
 
 -------------------------------------------------------------------------------

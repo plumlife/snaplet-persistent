@@ -1,5 +1,5 @@
 name:           snaplet-persistent
-version:        0.3.102
+version:        0.3.103
 synopsis:       persistent snaplet for the Snap Framework
 description:    Snaplet support for using the Postgresql database
                 with a Snap Framework application via the persistent
@@ -46,7 +46,7 @@ Library
     MonadCatchIO-transformers  >= 0.3     && < 0.4,
     monad-logger               >= 0.2.4   && < 0.4,
     exceptions                 >= 0.6     && < 1.0,
-    retry                      >= 0.5     && < 1.0,
+    retry                      >= 0.6     && < 1.0,
     mtl                        >= 2       && < 3,
     persistent                 >= 2.0     && < 3.0,
     persistent-postgresql      >= 2.0     && < 3.0,
